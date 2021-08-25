@@ -1,0 +1,38 @@
+{
+    "Version": "2012-10-17",
+    "Id": "key-consolepolicy-3",
+    "Statement": [
+        {
+            "Sid": "Enable IAM User Permissions",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::859548415772:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Enable Cloud9 Environment to Encrypt",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:sts::859548415772:assumed-role/AWSCloud9SSMAccessRole/i-02db041727b56064f"
+            },
+            "Action": "kms:Encrypt",
+            "Resource": "*"
+        },
+        {
+            "Sid": "Enable Cloud9 Environment to Decrypt",
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:sts::859548415772:assumed-role/AWSCloud9SSMAccessRole/i-02db041727b56064f"
+            },
+            "Action": "kms:Decrypt",
+            "Resource": "*",
+            "Condition": {
+                "StringEqualsIgnoreCase": {
+                    "kms:RecipientAttestation:PCR0": "ba0e4bf267e8b1ddd4ff7e4958d06cc73bfb8e175b808f26e2a197da825df57296c4b9eea42f20daf8c03259aadb8ec9"
+                }
+            }
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+cd /usr/share/nitro_enclaves/examples/vsock
+docker build -t rsa-test -f Dockerfile .
+sudo nitro-cli build-enclave --docker-uri rsa-test --output-file rsa-test.eif
+sudo nitro-cli run-enclave --eif-path rsa-test.eif --cpu-count 2 --memory 4096 --debug-mode --enclave-cid 20
+sudo nitro-cli run-enclave --eif-path vsock_sample_server.eif --cpu-count 2 --memory 4096 --debug-mode --enclave-cid 20
+
+nitro-cli console --enclave-id i-0293ee421149a5e17-enc17b4f0c16d909eb
+
+sudo nitro-cli terminate-enclave --enclave-id i-0293ee421149a5e17-enc17b4ef4ae597632
+nitro-cli describe-enclaves

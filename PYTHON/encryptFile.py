@@ -1,0 +1,118 @@
+import base64
+import logging
+import boto3
+from botocore.exceptions import ClientError
+from cryptography.fernet import Fernet
+import requests
+import json
+
+NUM_BYTES_FOR_LEN = 4
+
+def create_data_key(cmk_arn, key_spec='AES_256'):
+
+    kms_client = boto3.client('kms')
+    response = kms_client.generate_data_key(KeyId=cmk_arn, KeySpec=key_spec)
+
+    return response['CiphertextBlob'], base64.b64encode(response['Plaintext'])
+
+def encrypt_file(filename, cmk_arn):
+
+
+    with open(filename, 'rb') as file:
+        file_contents = file.read()
+    
+    data_key_encrypted, data_key_plaintext = create_data_key(cmk_arn)
+    f = Fernet(data_key_plaintext)
+    file_contents_encrypted = f.encrypt(file_contents)
+
+    x = {
+        "fileContentsEncrypted": base64.b64encode(file_contents_encrypted).decode(),
+        "dataKeyEncrypted": base64.b64encode(data_key_encrypted).decode()
+    }
+
+
+    with open(filename + '.encrypted', 'wb') as file_encrypted:
+        file_encrypted.write(len(data_key_encrypted).to_bytes(NUM_BYTES_FOR_LEN,
+                                                                  byteorder='big'))
+        file_encrypted.write(data_key_encrypted)
+        file_encrypted.write(file_contents_encrypted)
+
+    return json.dumps(x)
+
+def decrypt_data_key(data_key_encrypted):
+
+
+    kms_client = boto3.client('kms')
+  
+    response = kms_client.decrypt(CiphertextBlob=data_key_encrypted)
+
+    return base64.b64encode((response['Plaintext']))
+
+def decrypt_file_modified(file):
+    file = json.loads(file)
+    data_key_encrypted = file["dataKeyEncrypted"]
+    data_key_encrypted = base64.b64decode(data_key_encrypted)
+
+    data_key_plaintext = decrypt_data_key(data_key_encrypted)
+    file_contents_encrypted =  base64.b64decode(file["fileContentsEncrypted"])
+    f = Fernet(data_key_plaintext)
+    file_contents_decrypted = f.decrypt(file_contents_encrypted)
+
+    
+    with open("data.csv", 'wb') as file_decrypted:
+        file_decrypted.write(file_contents_decrypted)
+    
+
+
+
+def decrypt_file(filename):
+
+    try:
+        with open(filename + '.encrypted', 'rb') as file:
+            file_contents = file.read()
+    except IOError as e:
+        logging.error(e)
+        return False
+    data_key_encrypted_len = int.from_bytes(file_contents[:NUM_BYTES_FOR_LEN],
+                                            byteorder='big') \
+                             + NUM_BYTES_FOR_LEN
+    data_key_encrypted = file_contents[NUM_BYTES_FOR_LEN:data_key_encrypted_len]
+    
+    data_key_plaintext = decrypt_data_key(data_key_encrypted)
+    if data_key_plaintext is None:
+        logging.error("Cannot decrypt the data key")
+        return False
+
+    f = Fernet(data_key_plaintext)
+    file_contents_decrypted = f.decrypt(file_contents[data_key_encrypted_len:])
+
+    # Write the decrypted file contents
+    try:
+        with open(filename + '.decrypted', 'wb') as file_decrypted:
+            file_decrypted.write(file_contents_decrypted)
+    except IOError as e:
+        logging.error(e)
+        return False
+
+    return True
+
+def main():
+    file_to_encrypt = 'sampledata.csv'
+
+    cmk_arn = "arn:aws:kms:eu-west-3:859548415772:key/2289bb2a-ba19-4797-be50-0a7112651235"
+
+    json = encrypt_file(file_to_encrypt,cmk_arn)
+    print("File encrypted")
+    url = 'http://ec2-35-181-29-172.eu-west-3.compute.amazonaws.com/send_data'
+
+    x = requests.post(url, json=json)
+    print(x.text)
+        # # Decrypt the file
+
+    decrypt_file_modified(json)
+
+    decrypt_file(file_to_encrypt)
+
+
+if __name__ == '__main__':
+    main()

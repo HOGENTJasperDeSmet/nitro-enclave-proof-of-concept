@@ -30,9 +30,10 @@
             "Resource": "*",
             "Condition": {
                 "StringEqualsIgnoreCase": {
-                    "kms:RecipientAttestation:PCR0": "ba0e4bf267e8b1ddd4ff7e4958d06cc73bfb8e175b808f26e2a197da825df57296c4b9eea42f20daf8c03259aadb8ec9"
+                    "kms:RecipientAttestation:PCR0": "7703c936bf3af3115d703e72ca2ffe07feb3338062a4dcfe2289fd1e9e9cb4fb1c05c83e68fa0caee650892d32deb14b"
                 }
             }
         }
+ 
     ]
 }

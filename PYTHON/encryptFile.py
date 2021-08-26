@@ -99,19 +99,17 @@ def decrypt_file(filename):
 def main():
     file_to_encrypt = 'sampledata.csv'
 
-    cmk_arn = "arn:aws:kms:eu-west-3:859548415772:key/2289bb2a-ba19-4797-be50-0a7112651235"
+    cmk_arn = "ARN GOES HERE"
+    url = 'http://URL GOES HERE/send_data'
 
     json = encrypt_file(file_to_encrypt,cmk_arn)
     print("File encrypted")
-    url = 'http://ec2-35-181-29-172.eu-west-3.compute.amazonaws.com/send_data'
+
 
     x = requests.post(url, json=json)
     print(x.text)
-        # # Decrypt the file
-
-    decrypt_file_modified(json)
-
-    decrypt_file(file_to_encrypt)
+    with open("result.csv", 'wb') as file_decrypted:
+        file_decrypted.write(x.text)
 
 
 if __name__ == '__main__':
